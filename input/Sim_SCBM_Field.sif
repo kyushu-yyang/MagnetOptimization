@@ -1,0 +1,124 @@
+Header
+  CHECK KEYWORDS Warn
+  Mesh DB "." "opt_SCBM_IronYokeShape"
+  Include Path ""
+  Results Directory "opt_SCBM_IronYokeShape"
+End
+
+Run Control
+  Run Control Iterations = Integer 5
+  Max Output Level = 5
+  Parameter File   = File "data/operation_current.dat"
+  Parameter Count  = Integer 1
+End
+
+Constants
+  Gravity(4)             = 0 -1 0 9.82
+  Stefan Boltzmann       = 5.67e-08
+  Permittivity of Vacuum = 8.8542e-12
+  Boltzmann Constant     = 1.3807e-23
+  Unit Charge            = 1.602e-19
+End
+
+Simulation
+  Max Output Level            = 5
+  Coordinate System           = Cylindric Symmetric
+  Coordinate Mapping(3)       = 1 2 3
+  Simulation Type             = Steady
+  Steady State Max Iterations = 1
+  Output Intervals            = 1
+  Timestepping Method         = BDF
+  BDF Order                   = 1
+  Post File                   = magfield.vtu
+End
+
+Body 1
+  Target Bodies(3) = 28 30 31
+  Name             = "Air"
+  Equation         = 1
+  Material         = 1
+End
+
+Body 2
+  Target Bodies(1) = 29
+  Name             = "Iron_Yoke"
+  Equation         = 1
+  Material         = 2
+End
+
+Solver 1
+  Equation          = MyEquation
+  Variable          = Potential
+  Procedure         = "MagneticSourceField2Dmod" "StaticMagneticField2D"
+  Operation Current = Real $rpar(0)
+  Field Order       = Integer 5
+  Exec Solver       = Always
+  Stabilize         = True
+  Steady State Convergence Tolerance       = 1.0e-9
+  Nonlinear System Convergence Tolerance   = 1.0e-9
+  Nonlinear System Max Iterations          = 200
+  Nonlinear System Newton After Iterations = 5
+  Nonlinear System Newton After Tolerance  = 1.0e-1
+  Nonlinear System Relaxation Factor       = 0.2
+  Linear System Solver        = Direct
+  Linear System Direct Method = umfpack
+End
+
+Solver 2
+  Equation                          = CalcFields
+  Procedure                         = "MagnetoDynamics" "MagnetoDynamicsCalcFields"
+  Potential Variable                = Potential
+  Calculate Magnetic Field Strength = True
+  Calculate Nodal Fields            = True
+  Calculate Elemental Fields        = True
+  Exec Solver                       = Always
+  Stabilize                         = True
+  Bubbles                           = False
+  Lumped Mass Matrix                = False
+  Optimize Bandwidth                = True
+  Steady State Convergence Tolerance       = 1.0e-10
+  Nonlinear System Convergence Tolerance   = 1.0e-10
+  Nonlinear System Max Iterations          = 200
+  Nonlinear System Newton After Iterations = 5
+  Nonlinear System Newton After Tolerance  = 1.0e-2
+  Nonlinear System Relaxation Factor       = 1
+  Linear System Solver        = Direct
+  Linear System Direct Method = umfpack
+End
+
+Solver 3
+  Exec Solver = After Simulation
+  Equation    = SaveCenterField
+  Procedure   = "SaveData" "SaveScalars"
+  Filename    = fieldAtRef.dat
+  File Append = Logical False
+  Echo Values = Logical False
+  Exact Coordinates       = True
+!  Filename Numbering      = True
+  Save Coordinates(81,2) = Real
+    INCLUDE data/referenceRadius.dat
+End
+
+Equation 1
+  Name              = "GoverningEq"
+  Active Solvers(2) = 2 1
+End
+
+Material 1
+  Name                  = "Air"
+  Relative Permeability = 1.0
+End
+
+Material 2
+  Name            = "Iron"
+!  Relative Permeability = 1.0
+  H-B Curve(50,2) = Real
+    INCLUDE data/50H470TSB-pf.bh
+End
+
+Boundary Condition 1
+  Target Boundaries(1) = 24
+  Name                 = "FarField"
+  Infinity BC          = True
+End
+
